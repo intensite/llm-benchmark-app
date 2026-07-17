@@ -1,10 +1,18 @@
 import React from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import BenchmarkResult from '../../app/components/BenchmarkResult';
+import ThemeToggle from '../../app/components/ThemeToggle';
 import { getResultById } from '../../app/lib/db';
+import type { StoredResult } from '../../app/lib/types';
+
+interface SavedResultPageProps {
+  data: StoredResult;
+  modelId: string;
+}
 
 // Affiche un résultat déjà enregistré, sans relancer le modèle.
-export default function SavedResultPage({ data, modelId }) {
+export default function SavedResultPage({ data, modelId }: SavedResultPageProps) {
   return (
     <div className="app-shell">
       <Head>
@@ -18,6 +26,7 @@ export default function SavedResultPage({ data, modelId }) {
             Résultat enregistré
           </h1>
           <p className="model-tag">{modelId}</p>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -26,7 +35,8 @@ export default function SavedResultPage({ data, modelId }) {
           Résultat archivé — aucun modèle chargé en mémoire.
         </div>
         <BenchmarkResult data={data} />
-        <div style={{ marginTop: '24px' }}>
+        <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+          <a href={`/history/${encodeURIComponent(modelId)}`} className="btn">← Retour à l'historique</a>
           <a href="/" className="btn">← Retour à la liste des modèles</a>
         </div>
       </main>
@@ -34,8 +44,9 @@ export default function SavedResultPage({ data, modelId }) {
   );
 }
 
-export async function getServerSideProps({ params }) {
-  const id = parseInt(params.id, 10);
+export const getServerSideProps: GetServerSideProps<SavedResultPageProps> = async ({ params }) => {
+  const rawId = params?.id;
+  const id = parseInt(Array.isArray(rawId) ? rawId[0] : rawId ?? '', 10);
   const data = Number.isInteger(id) ? getResultById(id) : null;
 
   if (!data) {
@@ -48,4 +59,4 @@ export async function getServerSideProps({ params }) {
       modelId: data.modelInfo?.modelName || data.modelId || 'inconnu'
     }
   };
-}
+};
